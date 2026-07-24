@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Card,
   CardDescription,
@@ -22,15 +23,17 @@ export default async function InicioPage() {
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">🏠 Propiedades</CardTitle>
-            <CardDescription>
-              Aquí registrarás tus propiedades con fotos, precio y estado.
-              Llega en el Sprint 1.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <Link href="/propiedades">
+          <Card className="transition-shadow hover:shadow-md">
+            <CardHeader>
+              <CardTitle className="text-base">🏠 Propiedades</CardTitle>
+              <CardDescription>
+                Registra y administra tus propiedades con fotos, precio y
+                estado. ¡Ya disponible!
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
         <Card>
           <CardHeader>
             <CardTitle className="text-base">📣 Publicaciones</CardTitle>
