@@ -98,11 +98,25 @@ npm run lint       # linting
 
 > Actualiza esta sección al cerrar cada sprint.
 
-- Sprint actual: **Sprint 0 — ✅ COMPLETADO**
+- Sprint actual: **Sprint 1 — 🟡 EN CURSO** (código completo y desplegado; falta que Omar registre sus propiedades reales para cerrarlo). Sprint 0 ✅ COMPLETADO.
 - Última actualización: 2026-07-24
 - **Sitio en producción**: https://inmopilot.vercel.app
 - **Repositorio (privado)**: github.com/jocardenasr-source/inmopilot
 - **Login**: correo + contraseña (Supabase Auth). Usuario de Omar creado manualmente en el panel de Supabase. No hay registro público (panel de un solo usuario).
+
+### Sprint 1 — Catálogo de propiedades (estado)
+- **Código:** ✅ completo, build OK, subido a GitHub y desplegado en Vercel.
+- **Base de datos:** ✅ tabla `public.propiedades` + bucket de Storage `propiedades` (público) creados en Supabase con RLS (script en `supabase/sprint1-propiedades.sql`). Verificado: la tabla responde y RLS bloquea acceso anónimo.
+- **Pendiente para cerrar:** Omar debe crear sus propiedades reales (probar crear/editar/cambiar estado/borrar con fotos) en local y en producción. Estaba probando la creación de la primera propiedad cuando pausamos.
+- **Qué se construyó:**
+  - Módulo `src/modules/properties/`: `types.ts` (tipos, etiquetas ES, formato COP), `queries.ts` (listar/obtener), `actions.ts` (crear/actualizar/cambiar estado/borrar + subida y borrado de fotos en Storage), y componentes (`property-form`, `property-card`, `property-actions`).
+  - Rutas: `/propiedades` (lista en tarjetas), `/propiedades/nueva`, `/propiedades/[id]` (detalle con galería), `/propiedades/[id]/editar`.
+  - Sidebar con navegación activa (`src/app/(panel)/sidebar-nav.tsx`).
+- **Decisiones técnicas del sprint:**
+  - **shadcn/ui usa base Radix** (no Base UI). Al inicializar hay que forzarlo: `npx shadcn@latest init -b radix --preset nova`. Base UI (base-nova, por defecto) NO soporta `asChild` y rompe el patrón estándar.
+  - **Fuente Geist local** vía paquete `geist` (`geist/font/sans` y `geist/font/mono`), NO `next/font/google`, porque el entorno de build local no siempre alcanza Google Fonts. Si se re-corre `shadcn init`, revisar que no vuelva a inyectar `Geist` de `next/font/google` en `src/app/layout.tsx`, y que `--font-sans` en `globals.css` apunte a `--font-geist-sans`.
+  - `next.config.ts` tiene `images.remotePatterns` para `*.supabase.co/storage/v1/object/public/**` (mostrar fotos).
+  - Campos de propiedad (contexto Colombia, moneda COP): título, operación (arriendo/venta), tipo (apartamento/casa/local/oficina/lote/bodega), precio, ciudad, barrio, dirección, habitaciones, baños, parqueaderos, área m², estrato (1–6), descripción, estado (disponible/arrendada/vendida), fotos.
 
 ### Qué quedó funcionando en el Sprint 0
 - Proyecto Next.js 16 (App Router) + TypeScript + Tailwind + shadcn/ui.
@@ -119,4 +133,5 @@ npm run lint       # linting
 ### Pendiente / notas para el próximo sprint
 - Aún NO configurado (llega cuando toque): `SUPABASE_SERVICE_ROLE_KEY`, variables de Meta/Facebook, WhatsApp y `ANTHROPIC_API_KEY`.
 - Recordar a Omar: Vercel Hobby es solo uso NO comercial; migrar a plan pago cuando el negocio esté en producción real.
-- **Próximo**: Sprint 1 — Catálogo de propiedades (CRUD + fotos con Supabase Storage).
+- **Al retomar**: terminar la prueba del Sprint 1 (Omar registra sus propiedades reales con fotos, en local y en producción). Luego marcar Sprint 1 como ✅ COMPLETADO.
+- **Próximo**: Sprint 2 — Generador de publicaciones (IA redacta el post en 3 tonos + plantilla visual con fotos + vista previa).
