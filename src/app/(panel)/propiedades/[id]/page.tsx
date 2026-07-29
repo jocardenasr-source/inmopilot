@@ -66,12 +66,12 @@ export default async function DetallePropiedadPage({
       {/* Galería de fotos */}
       {p.fotos.length > 0 ? (
         <div className="mb-6 grid gap-3">
-          <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+          <div className="relative aspect-video max-h-[70vh] w-full overflow-hidden rounded-lg bg-muted">
             <Image
               src={p.fotos[0]}
               alt={p.titulo}
               fill
-              className="object-cover"
+              className="object-contain"
               sizes="(max-width: 896px) 100vw, 896px"
               priority
             />
