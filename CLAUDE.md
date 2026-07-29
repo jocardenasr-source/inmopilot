@@ -98,8 +98,8 @@ npm run lint       # linting
 
 > Actualiza esta sección al cerrar cada sprint.
 
-- Sprint actual: **Sprint 1 — 🟡 EN CURSO** (código completo y desplegado; falta que Omar registre sus propiedades reales para cerrarlo). Sprint 0 ✅ COMPLETADO.
-- Última actualización: 2026-07-24
+- Sprint actual: **Sprint 1 — ✅ COMPLETADO** (catálogo de propiedades funcionando en local y producción; Omar registró su primera propiedad real con fotos). Sprint 0 ✅ COMPLETADO. Próximo: Sprint 2.
+- Última actualización: 2026-07-29
 - **Sitio en producción**: https://inmopilot.vercel.app
 - **Repositorio (privado)**: github.com/jocardenasr-source/inmopilot
 - **Login**: correo + contraseña (Supabase Auth). Usuario de Omar creado manualmente en el panel de Supabase. No hay registro público (panel de un solo usuario).
@@ -107,7 +107,8 @@ npm run lint       # linting
 ### Sprint 1 — Catálogo de propiedades (estado)
 - **Código:** ✅ completo, build OK, subido a GitHub y desplegado en Vercel.
 - **Base de datos:** ✅ tabla `public.propiedades` + bucket de Storage `propiedades` (público) creados en Supabase con RLS (script en `supabase/sprint1-propiedades.sql`). Verificado: la tabla responde y RLS bloquea acceso anónimo.
-- **Pendiente para cerrar:** Omar debe crear sus propiedades reales (probar crear/editar/cambiar estado/borrar con fotos) en local y en producción. Estaba probando la creación de la primera propiedad cuando pausamos.
+- **Probado:** ✅ Omar creó su primera propiedad real con fotos (local y producción). Funciona crear, subir fotos, elegir portada, ver detalle.
+- **Subida de fotos:** directa del navegador a Supabase Storage (cliente), NO vía Server Action, para evitar el límite de 1 MB de Server Actions (y el de ~4.5 MB de Vercel). El formulario sube al seleccionar y envía solo las URLs (`fotos_urls`, en orden; la primera es la portada). Foto de portada en el detalle usa `object-contain` (imagen completa); tarjetas y miniaturas usan `object-cover`.
 - **Qué se construyó:**
   - Módulo `src/modules/properties/`: `types.ts` (tipos, etiquetas ES, formato COP), `queries.ts` (listar/obtener), `actions.ts` (crear/actualizar/cambiar estado/borrar + subida y borrado de fotos en Storage), y componentes (`property-form`, `property-card`, `property-actions`).
   - Rutas: `/propiedades` (lista en tarjetas), `/propiedades/nueva`, `/propiedades/[id]` (detalle con galería), `/propiedades/[id]/editar`.
@@ -133,5 +134,5 @@ npm run lint       # linting
 ### Pendiente / notas para el próximo sprint
 - Aún NO configurado (llega cuando toque): `SUPABASE_SERVICE_ROLE_KEY`, variables de Meta/Facebook, WhatsApp y `ANTHROPIC_API_KEY`.
 - Recordar a Omar: Vercel Hobby es solo uso NO comercial; migrar a plan pago cuando el negocio esté en producción real.
-- **Al retomar**: terminar la prueba del Sprint 1 (Omar registra sus propiedades reales con fotos, en local y en producción). Luego marcar Sprint 1 como ✅ COMPLETADO.
-- **Próximo**: Sprint 2 — Generador de publicaciones (IA redacta el post en 3 tonos + plantilla visual con fotos + vista previa).
+- **Opcional Sprint 1** (si Omar lo pide): que la tarjeta del catálogo también muestre la foto completa (hoy usa `object-cover`); registrar las demás propiedades reales.
+- **Próximo**: Sprint 2 — Generador de publicaciones (IA redacta el post en 3 tonos + plantilla visual con fotos + vista previa). Requiere configurar `ANTHROPIC_API_KEY`.
