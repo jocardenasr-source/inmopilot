@@ -3,7 +3,8 @@
 import { useActionState, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus, Loader2, X } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,13 +49,41 @@ export function PropertyForm({
   const [fotosActuales, setFotosActuales] = useState<string[]>(
     propiedad?.fotos ?? []
   );
-  // Vista previa de fotos nuevas seleccionadas.
-  const [nuevasPreviews, setNuevasPreviews] = useState<string[]>([]);
+  // Fotos nuevas ya subidas a Supabase (guardamos sus URLs públicas).
+  const [nuevasUrls, setNuevasUrls] = useState<string[]>([]);
+  const [subiendo, setSubiendo] = useState(false);
+  const [errorFoto, setErrorFoto] = useState<string | null>(null);
   const inputFotos = useRef<HTMLInputElement>(null);
 
-  function onSeleccionarFotos(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onSeleccionarFotos(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
-    setNuevasPreviews(files.map((f) => URL.createObjectURL(f)));
+    if (files.length === 0) return;
+
+    setErrorFoto(null);
+    setSubiendo(true);
+    const supabase = createClient();
+
+    try {
+      for (const file of files) {
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const ruta = `${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage
+          .from("propiedades")
+          .upload(ruta, file, { contentType: file.type || undefined });
+        if (error) throw error;
+        const { data } = supabase.storage
+          .from("propiedades")
+          .getPublicUrl(ruta);
+        setNuevasUrls((prev) => [...prev, data.publicUrl]);
+      }
+    } catch {
+      setErrorFoto(
+        "No se pudo subir alguna foto. Revisa tu conexión e inténtalo de nuevo."
+      );
+    } finally {
+      setSubiendo(false);
+      if (inputFotos.current) inputFotos.current.value = "";
+    }
   }
 
   return (
@@ -254,13 +283,12 @@ export function PropertyForm({
         </div>
       )}
 
-      {/* Subir fotos nuevas */}
+      {/* Subir fotos nuevas (se suben directo a Supabase al seleccionarlas) */}
       <div className="grid gap-2">
         <Label>{editando ? "Agregar más fotos" : "Fotos"}</Label>
         <input
           ref={inputFotos}
           type="file"
-          name="fotos"
           accept="image/*"
           multiple
           onChange={onSeleccionarFotos}
@@ -271,16 +299,50 @@ export function PropertyForm({
           variant="outline"
           className="w-fit"
           onClick={() => inputFotos.current?.click()}
+          disabled={subiendo}
         >
-          <ImagePlus className="mr-2 size-4" />
-          Seleccionar fotos
+          {subiendo ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Subiendo fotos...
+            </>
+          ) : (
+            <>
+              <ImagePlus className="mr-2 size-4" />
+              Seleccionar fotos
+            </>
+          )}
         </Button>
-        {nuevasPreviews.length > 0 && (
+        {errorFoto && (
+          <p className="text-sm text-destructive" role="alert">
+            {errorFoto}
+          </p>
+        )}
+        {nuevasUrls.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-3">
-            {nuevasPreviews.map((src, i) => (
-              <div key={i} className="size-24 overflow-hidden rounded-md border">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="Vista previa" className="size-full object-cover" />
+            {nuevasUrls.map((url) => (
+              <div
+                key={url}
+                className="relative size-24 overflow-hidden rounded-md border"
+              >
+                <Image
+                  src={url}
+                  alt="Foto nueva"
+                  fill
+                  className="object-cover"
+                  sizes="96px"
+                />
+                <input type="hidden" name="fotos_nuevas" value={url} />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setNuevasUrls((prev) => prev.filter((u) => u !== url))
+                  }
+                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                  aria-label="Quitar foto"
+                >
+                  <X className="size-3" />
+                </button>
               </div>
             ))}
           </div>
@@ -294,7 +356,7 @@ export function PropertyForm({
       )}
 
       <div className="flex gap-3">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || subiendo}>
           {pending ? "Guardando..." : editando ? "Guardar cambios" : "Crear propiedad"}
         </Button>
         <Button type="button" variant="ghost" asChild>

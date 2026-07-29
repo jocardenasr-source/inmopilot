@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ESTADOS,
   OPERACIONES,
@@ -35,29 +34,6 @@ function rutaDesdeUrl(url: string): string | null {
   const marca = `/${BUCKET}/`;
   const i = url.indexOf(marca);
   return i === -1 ? null : url.slice(i + marca.length);
-}
-
-// Sube los archivos nuevos al Storage y devuelve sus URLs públicas.
-async function subirFotos(
-  supabase: SupabaseClient,
-  propiedadId: string,
-  archivos: File[]
-): Promise<string[]> {
-  const urls: string[] = [];
-  for (const archivo of archivos) {
-    if (!archivo || archivo.size === 0) continue;
-    const ext = archivo.name.split(".").pop() ?? "jpg";
-    const ruta = `${propiedadId}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage
-      .from(BUCKET)
-      .upload(ruta, archivo, { contentType: archivo.type || undefined });
-    if (error) {
-      throw new Error(`No se pudo subir una foto: ${error.message}`);
-    }
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(ruta);
-    urls.push(data.publicUrl);
-  }
-  return urls;
 }
 
 // Lee y valida los campos comunes del formulario.
@@ -98,26 +74,16 @@ export async function crearPropiedad(
   try {
     const supabase = await createClient();
     const campos = leerCampos(formData);
+    // Las fotos ya se subieron desde el navegador; aquí llegan solo las URLs.
+    const fotos = formData.getAll("fotos_nuevas").map(String);
 
-    // 1) Creamos la fila para obtener un id.
     const { data, error } = await supabase
       .from("propiedades")
-      .insert({ ...campos, fotos: [] })
+      .insert({ ...campos, fotos })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
     nuevoId = data.id as string;
-
-    // 2) Subimos las fotos y actualizamos la fila.
-    const archivos = formData.getAll("fotos") as File[];
-    const urls = await subirFotos(supabase, nuevoId, archivos);
-    if (urls.length > 0) {
-      const { error: e2 } = await supabase
-        .from("propiedades")
-        .update({ fotos: urls })
-        .eq("id", nuevoId);
-      if (e2) throw new Error(e2.message);
-    }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Error al guardar." };
   }
@@ -135,8 +101,9 @@ export async function actualizarPropiedad(
     const supabase = await createClient();
     const campos = leerCampos(formData);
 
-    // Fotos que el usuario decidió conservar.
+    // Fotos que el usuario conservó + las nuevas ya subidas desde el navegador.
     const conservadas = formData.getAll("fotos_actuales").map(String);
+    const nuevas = formData.getAll("fotos_nuevas").map(String);
 
     // Borramos del Storage las fotos que se quitaron.
     const { data: previa } = await supabase
@@ -152,10 +119,6 @@ export async function actualizarPropiedad(
     if (rutasEliminadas.length > 0) {
       await supabase.storage.from(BUCKET).remove(rutasEliminadas);
     }
-
-    // Subimos las fotos nuevas.
-    const archivos = formData.getAll("fotos") as File[];
-    const nuevas = await subirFotos(supabase, id, archivos);
 
     const { error } = await supabase
       .from("propiedades")
