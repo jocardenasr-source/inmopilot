@@ -74,8 +74,9 @@ export async function crearPropiedad(
   try {
     const supabase = await createClient();
     const campos = leerCampos(formData);
-    // Las fotos ya se subieron desde el navegador; aquí llegan solo las URLs.
-    const fotos = formData.getAll("fotos_nuevas").map(String);
+    // Las fotos ya se subieron desde el navegador; aquí llegan solo las URLs,
+    // en orden (la primera es la portada).
+    const fotos = formData.getAll("fotos_urls").map(String);
 
     const { data, error } = await supabase
       .from("propiedades")
@@ -101,9 +102,8 @@ export async function actualizarPropiedad(
     const supabase = await createClient();
     const campos = leerCampos(formData);
 
-    // Fotos que el usuario conservó + las nuevas ya subidas desde el navegador.
-    const conservadas = formData.getAll("fotos_actuales").map(String);
-    const nuevas = formData.getAll("fotos_nuevas").map(String);
+    // Lista final de fotos, en orden (la primera es la portada).
+    const fotos = formData.getAll("fotos_urls").map(String);
 
     // Borramos del Storage las fotos que se quitaron.
     const { data: previa } = await supabase
@@ -112,7 +112,7 @@ export async function actualizarPropiedad(
       .eq("id", id)
       .single();
     const anteriores: string[] = (previa?.fotos as string[]) ?? [];
-    const eliminadas = anteriores.filter((u) => !conservadas.includes(u));
+    const eliminadas = anteriores.filter((u) => !fotos.includes(u));
     const rutasEliminadas = eliminadas
       .map(rutaDesdeUrl)
       .filter((r): r is string => r !== null);
@@ -122,7 +122,7 @@ export async function actualizarPropiedad(
 
     const { error } = await supabase
       .from("propiedades")
-      .update({ ...campos, fotos: [...conservadas, ...nuevas] })
+      .update({ ...campos, fotos })
       .eq("id", id);
     if (error) throw new Error(error.message);
   } catch (e) {
