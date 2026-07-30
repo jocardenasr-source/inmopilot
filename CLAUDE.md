@@ -98,8 +98,8 @@ npm run lint       # linting
 
 > Actualiza esta sección al cerrar cada sprint.
 
-- Sprint actual: **Sprint 2 — 🟡 EN CURSO** (etapa 1: generador de publicaciones con plantillas, hecho y desplegado; falta feedback de Omar sobre los tonos y, opcionalmente, conectar Gemini). Sprints 0 y 1 ✅ COMPLETADOS.
-- Última actualización: 2026-07-29
+- Sprint actual: **Sprint 3 — ✅ COMPLETADO** (publicación automática en la Página de Facebook, texto + fotos, probada en local). Sprints 0, 1 y 2 ✅ COMPLETADOS. Pendiente menor: confirmar publicación en producción tras cargar variables en Vercel.
+- Última actualización: 2026-07-30
 - **Sitio en producción**: https://inmopilot.vercel.app
 - **Repositorio (privado)**: github.com/jocardenasr-source/inmopilot
 - **Login**: correo + contraseña (Supabase Auth). Usuario de Omar creado manualmente en el panel de Supabase. No hay registro público (panel de un solo usuario).
@@ -128,11 +128,19 @@ npm run lint       # linting
   - Ruta `/propiedades/[id]/publicar` y botón "Generar publicación" en el detalle.
 - **Al retomar:** recoger feedback de Omar sobre los tonos y afinar plantillas; opcional: conectar Gemini (requiere `GOOGLE_API_KEY` / clave de Google AI Studio, gratis).
 
-### Sprint 3 — Publicación automática (plan acordado, aún NO empezado)
-- **Alcance decidido con Omar:** automatizar la **Página de Facebook** (texto + fotos vía Meta Graph API / Pages API, gratis, oficial). Instagram Business queda opcional. Grupos y Marketplace NO se pueden automatizar (Meta quitó la Groups API en abril 2024; los bots de navegador arriesgan baneo) → se quedan en modo semiautomático (copiar/pegar, ya hecho en Sprint 2).
-- **Estado de Omar:** aún NO tiene creada la Página de Facebook del negocio; está próximo a crearla. Requisito para el Paso 2.
-- **Secuencia:** (1) Omar crea la Página; (2) guiar a Omar a crear app en Meta for Developers + conectar la Página + obtener Page Access Token (no requiere App Review para publicar en Página propia como admin, app en modo desarrollo); (3) construir integración: botón "Publicar ahora", programar, historial. Fotos se publican por URL pública de Supabase.
-- **Acuerdo:** se puede adelantar el código del Paso 3 (usando variables de entorno para las llaves) sin depender de que Omar tenga la Página. Variables futuras: `META_PAGE_ACCESS_TOKEN`, `META_PAGE_ID`.
+### Sprint 3 — Publicación automática en Facebook (estado)
+- **✅ FUNCIONA:** publicación automática de texto + todas las fotos en la Página de Facebook, probada en local por Omar (primera publicación real exitosa).
+- **Página conectada:** "Inmobiliaria Inmopilot", `META_PAGE_ID=1246706471856501`. Token de Página **permanente** (no expira), con permisos `pages_show_list, pages_read_engagement, pages_manage_posts`. App de Meta "Inmopilot" (App ID 1024340147252969), en modo desarrollo (suficiente para publicar en Página propia como admin, sin App Review).
+- **Cómo se generó el token permanente:** app en Meta for Developers → Graph API Explorer (token de usuario corto con los 3 permisos) → intercambio a token de usuario largo (`oauth/access_token?grant_type=fb_exchange_token` con app secret) → `me/accounts` con el token largo → token de Página no expira. Se guardó SOLO en `.env.local` (local) y en Vercel (producción).
+- **Qué se construyó:**
+  - `src/lib/meta.ts`: `facebookConfigurado()` y `publicarEnPagina({mensaje, fotos})` (Graph API v25.0; sube fotos con `published=false` y luego crea el post en `/feed` con `attached_media`).
+  - `src/modules/publishing/actions.ts`: `publicarEnFacebook(propiedadId, mensaje)` (verifica configuración, publica, guarda historial best-effort).
+  - `src/modules/publishing/queries.ts`: `listarPublicaciones(propiedadId)` (tolera que la tabla no exista).
+  - UI en `/propiedades/[id]/publicar`: botón "Publicar en Facebook" por tono + diálogo de confirmación, aviso amarillo si no está conectado, e historial con enlace "Ver post".
+  - Tabla `public.publicaciones` (script `supabase/sprint3-publicaciones.sql`) creada en Supabase.
+- **Grupos/Marketplace:** siguen en modo semiautomático (botón "Abrir FB" para copiar/pegar) — Meta no permite automatizarlos.
+- **Pendiente:** confirmar una publicación desde producción (Vercel) tras cargar `META_PAGE_ID` y `META_PAGE_ACCESS_TOKEN` en Vercel. Opcional: Instagram Business, programar publicaciones (Vercel Cron), conectar Gemini al generador de textos.
+- **Seguridad:** el App Secret se usó solo para generar el token; Omar puede regenerarlo en Meta (Settings → Basic) sin afectar el token de Página ya emitido.
 
 ### Qué quedó funcionando en el Sprint 0
 - Proyecto Next.js 16 (App Router) + TypeScript + Tailwind + shadcn/ui.
