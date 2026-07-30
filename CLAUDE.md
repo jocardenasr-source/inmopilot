@@ -98,7 +98,7 @@ npm run lint       # linting
 
 > Actualiza esta sección al cerrar cada sprint.
 
-- Sprint actual: **Sprint 1 — ✅ COMPLETADO** (catálogo de propiedades funcionando en local y producción; Omar registró su primera propiedad real con fotos). Sprint 0 ✅ COMPLETADO. Próximo: Sprint 2.
+- Sprint actual: **Sprint 2 — 🟡 EN CURSO** (etapa 1: generador de publicaciones con plantillas, hecho y desplegado; falta feedback de Omar sobre los tonos y, opcionalmente, conectar Gemini). Sprints 0 y 1 ✅ COMPLETADOS.
 - Última actualización: 2026-07-29
 - **Sitio en producción**: https://inmopilot.vercel.app
 - **Repositorio (privado)**: github.com/jocardenasr-source/inmopilot
@@ -119,6 +119,21 @@ npm run lint       # linting
   - `next.config.ts` tiene `images.remotePatterns` para `*.supabase.co/storage/v1/object/public/**` (mostrar fotos).
   - Campos de propiedad (contexto Colombia, moneda COP): título, operación (arriendo/venta), tipo (apartamento/casa/local/oficina/lote/bodega), precio, ciudad, barrio, dirección, habitaciones, baños, parqueaderos, área m², estrato (1–6), descripción, estado (disponible/arrendada/vendida), fotos.
 
+### Sprint 2 — Generador de publicaciones (estado)
+- **Etapa 1 (plantillas, sin IA): ✅ hecha y desplegada.** Falta feedback de Omar sobre los tonos.
+- **Decisión de Omar:** empezar con plantillas gratis ahora y conectar **Google Gemini (plan gratuito, sin tarjeta)** como IA real después, sin rehacer nada. (Alternativa premium: Claude Haiku ~$5.)
+- **Qué se construyó:**
+  - `src/modules/publishing/generador.ts`: función pura `generarVariantes(propiedad, contacto?, seed?)` que arma 3 tonos (Formal, Cercano, Directo) con plantillas + variación por semilla. **Diseñada para que enchufar IA sea solo cambiar el proveedor**, sin tocar la UI.
+  - `src/modules/publishing/components/post-generator.tsx` (cliente): 3 variantes lado a lado, campo de contacto/WhatsApp opcional (se inyecta en el texto), botón "Generar otras versiones" (regenera con nueva semilla), "Copiar" y "Copiar y abrir Facebook", recordatorio de fotos. Copia con `navigator.clipboard` + toast (sonner).
+  - Ruta `/propiedades/[id]/publicar` y botón "Generar publicación" en el detalle.
+- **Al retomar:** recoger feedback de Omar sobre los tonos y afinar plantillas; opcional: conectar Gemini (requiere `GOOGLE_API_KEY` / clave de Google AI Studio, gratis).
+
+### Sprint 3 — Publicación automática (plan acordado, aún NO empezado)
+- **Alcance decidido con Omar:** automatizar la **Página de Facebook** (texto + fotos vía Meta Graph API / Pages API, gratis, oficial). Instagram Business queda opcional. Grupos y Marketplace NO se pueden automatizar (Meta quitó la Groups API en abril 2024; los bots de navegador arriesgan baneo) → se quedan en modo semiautomático (copiar/pegar, ya hecho en Sprint 2).
+- **Estado de Omar:** aún NO tiene creada la Página de Facebook del negocio; está próximo a crearla. Requisito para el Paso 2.
+- **Secuencia:** (1) Omar crea la Página; (2) guiar a Omar a crear app en Meta for Developers + conectar la Página + obtener Page Access Token (no requiere App Review para publicar en Página propia como admin, app en modo desarrollo); (3) construir integración: botón "Publicar ahora", programar, historial. Fotos se publican por URL pública de Supabase.
+- **Acuerdo:** se puede adelantar el código del Paso 3 (usando variables de entorno para las llaves) sin depender de que Omar tenga la Página. Variables futuras: `META_PAGE_ACCESS_TOKEN`, `META_PAGE_ID`.
+
 ### Qué quedó funcionando en el Sprint 0
 - Proyecto Next.js 16 (App Router) + TypeScript + Tailwind + shadcn/ui.
 - Autenticación con Supabase: pantalla de login en `/login` y panel protegido; sin sesión redirige a login (protección en `src/proxy.ts`).
@@ -135,4 +150,4 @@ npm run lint       # linting
 - Aún NO configurado (llega cuando toque): `SUPABASE_SERVICE_ROLE_KEY`, variables de Meta/Facebook, WhatsApp y `ANTHROPIC_API_KEY`.
 - Recordar a Omar: Vercel Hobby es solo uso NO comercial; migrar a plan pago cuando el negocio esté en producción real.
 - **Opcional Sprint 1** (si Omar lo pide): que la tarjeta del catálogo también muestre la foto completa (hoy usa `object-cover`); registrar las demás propiedades reales.
-- **Próximo**: Sprint 2 — Generador de publicaciones (IA redacta el post en 3 tonos + plantilla visual con fotos + vista previa). Requiere configurar `ANTHROPIC_API_KEY`.
+- **Al retomar (próxima sesión):** (a) Omar prueba/valora los 3 tonos del generador; (b) decidir si conectamos Gemini gratis; y/o (c) empezar Sprint 3 — se puede adelantar el código de la integración con la API de Facebook mientras Omar crea la Página del negocio.
