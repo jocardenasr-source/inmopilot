@@ -11,6 +11,7 @@ import {
   MapPin,
   Maximize,
   Megaphone,
+  MessageCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -131,6 +132,12 @@ export default async function DetallePropiedadPage({
           <Link href={`/propiedades/${p.id}/publicar`}>
             <Megaphone className="mr-1 size-4" />
             Generar publicación
+          </Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link href={`/propiedades/${p.id}/asistente`}>
+            <MessageCircle className="mr-1 size-4" />
+            Probar asistente IA
           </Link>
         </Button>
         <PropertyActions id={p.id} estado={p.estado} />
