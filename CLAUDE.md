@@ -98,7 +98,7 @@ npm run lint       # linting
 
 > Actualiza esta sección al cerrar cada sprint.
 
-- Sprint actual: **Sprint 4 — 🟡 EN CURSO** (Etapa A ✅: asistente IA con Gemini probado en local; falta Etapa B: conectar WhatsApp Cloud API + webhook, y Etapa C: unir todo). Sprints 0-3 ✅ COMPLETADOS.
+- Sprint actual: **Sprint 4 — 🟡 EN CURSO** (Etapa A ✅ asistente IA con Gemini; todo el código de WhatsApp ✅ hecho y desplegado; **BLOQUEADO por Meta**: restricción automática del portfolio comercial nuevo impide conectar WhatsApp — esperar/revisión de Meta). Sprints 0-3 ✅ COMPLETADOS.
 - Última actualización: 2026-07-30
 - **Sitio en producción**: https://inmopilot.vercel.app
 - **Repositorio (privado)**: github.com/jocardenasr-source/inmopilot
@@ -134,7 +134,16 @@ npm run lint       # linting
   - `src/lib/gemini.ts`: cliente Gemini server-only (`geminiConfigurado()`, `generarContenido({system, mensajes, json})`).
   - `src/modules/ai-agent/`: `prompts.ts` (contexto de propiedad + prompt de humanización: tono colombiano, mensajes cortos, escalar en visita/precio), `agent.ts` (`responderLead` → JSON `{respuesta, intencion, escalar}`), `actions.ts` (`probarAsistente`), `components/assistant-tester.tsx` (chat de prueba).
   - Chat de prueba en `/propiedades/[id]/asistente` + botón "Probar asistente IA" en el detalle.
-- **Pendiente:** cargar `GEMINI_API_KEY` (y opcional `GEMINI_MODEL`) en Vercel para producción. Etapa B: WhatsApp Cloud API (producto en la app Meta "Inmopilot", número de prueba gratis, webhook en `inmopilot.vercel.app`) — recordar límites: número de prueba solo escribe a ~5 destinatarios verificados hasta verificar el negocio. Etapa C: unir entrante→IA→responder, guardar conversación, botón "tomar el control", demoras (ojo límite ~10s de Vercel Hobby → demoras largas necesitan cola/otro enfoque).
+- **Etapa B/C ✅ CÓDIGO HECHO y desplegado (falta conexión Meta):**
+  - `src/lib/whatsapp.ts` (`enviarWhatsApp`), `src/lib/supabase/admin.ts` (cliente service role para el webhook).
+  - Agente general sobre todas las propiedades disponibles: `src/modules/ai-agent/prompts-general.ts` + `responderLeadGeneral` en `agent.ts`.
+  - Webhook `src/app/api/whatsapp/route.ts` (GET verify con `WHATSAPP_VERIFY_TOKEN`, POST recibir) + `src/modules/whatsapp/handler.ts` (guarda conversación/mensaje, llama IA, responde, y si `escalar` pone `modo='humano'` para que Omar siga).
+  - `src/proxy.ts` excluye `/api` de la protección de login.
+  - Tabla `conversaciones` + `mensajes` creadas en Supabase (`supabase/sprint4-whatsapp.sql`). Service role key configurada.
+- **🚫 BLOQUEO ACTUAL (2026-07-30):** al activar WhatsApp, Meta muestra "Onboarding failure: Your business is prohibited from advertising, including app sharing" — restricción automática del portfolio comercial nuevo "Inmobiliaria Inmopilot". No es del código. Omar va a esperar / pedir revisión en business.facebook.com/accountquality (puede tardar 24-48h o requerir verificación de identidad).
+- **Al retomar (cuando Meta libere):** en WhatsApp → Configuración de la API, copiar **Phone number ID** y **token** (temporal 24h; luego hacer uno permanente con System User en Business Settings). Registrar el número de Omar como destinatario de prueba. Configurar env en local y **Vercel**: `WHATSAPP_VERIFY_TOKEN=inmopilot_wh_verif_2026`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY` (sb_secret_...). Redeploy. Luego en Meta → WhatsApp → Configuración → Webhook: Callback URL `https://inmopilot.vercel.app/api/whatsapp`, verify token el mismo, y **suscribir el campo `messages`**. Probar enviando un WhatsApp al número de prueba.
+- **Nota demoras 20-90s:** aún no implementadas (límite ~10s de Vercel Hobby); la respuesta es inmediata. Pendiente para cuando toque (cola/`after()`), decidir con Omar.
+- **Falta también (Sprint 5):** bandeja/CRM para ver conversaciones y botón "tomar el control" en el panel (hoy `escalar` ya pone `modo='humano'`, pero no hay UI para verlo/responder desde el panel).
 
 ### Sprint 3 — Publicación automática en Facebook (estado)
 - **✅ FUNCIONA:** publicación automática de texto + todas las fotos en la Página de Facebook, probada en local por Omar (primera publicación real exitosa).
