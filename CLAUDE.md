@@ -98,7 +98,7 @@ npm run lint       # linting
 
 > Actualiza esta sección al cerrar cada sprint.
 
-- Sprint actual: **Sprint 3 — ✅ COMPLETADO** (publicación automática en la Página de Facebook, texto + fotos, probada en local). Sprints 0, 1 y 2 ✅ COMPLETADOS. Pendiente menor: confirmar publicación en producción tras cargar variables en Vercel.
+- Sprint actual: **Sprint 4 — 🟡 EN CURSO** (Etapa A ✅: asistente IA con Gemini probado en local; falta Etapa B: conectar WhatsApp Cloud API + webhook, y Etapa C: unir todo). Sprints 0-3 ✅ COMPLETADOS.
 - Última actualización: 2026-07-30
 - **Sitio en producción**: https://inmopilot.vercel.app
 - **Repositorio (privado)**: github.com/jocardenasr-source/inmopilot
@@ -127,6 +127,14 @@ npm run lint       # linting
   - `src/modules/publishing/components/post-generator.tsx` (cliente): 3 variantes lado a lado, campo de contacto/WhatsApp opcional (se inyecta en el texto), botón "Generar otras versiones" (regenera con nueva semilla), "Copiar" y "Copiar y abrir Facebook", recordatorio de fotos. Copia con `navigator.clipboard` + toast (sonner).
   - Ruta `/propiedades/[id]/publicar` y botón "Generar publicación" en el detalle.
 - **Al retomar:** recoger feedback de Omar sobre los tonos y afinar plantillas; opcional: conectar Gemini (requiere `GOOGLE_API_KEY` / clave de Google AI Studio, gratis).
+
+### Sprint 4 — WhatsApp + IA (estado)
+- **IA elegida:** Google **Gemini** (plan gratuito, sin tarjeta). Clave en `.env.local` como `GEMINI_API_KEY`. Modelo por defecto **`gemini-flash-latest`** (OJO: `gemini-2.5-flash` ya NO está disponible para cuentas nuevas; usar `gemini-flash-latest`). La clave de Omar empieza con `AQ.` (formato nuevo de AI Studio), funciona bien.
+- **Etapa A ✅ (asistente IA, probada en local):**
+  - `src/lib/gemini.ts`: cliente Gemini server-only (`geminiConfigurado()`, `generarContenido({system, mensajes, json})`).
+  - `src/modules/ai-agent/`: `prompts.ts` (contexto de propiedad + prompt de humanización: tono colombiano, mensajes cortos, escalar en visita/precio), `agent.ts` (`responderLead` → JSON `{respuesta, intencion, escalar}`), `actions.ts` (`probarAsistente`), `components/assistant-tester.tsx` (chat de prueba).
+  - Chat de prueba en `/propiedades/[id]/asistente` + botón "Probar asistente IA" en el detalle.
+- **Pendiente:** cargar `GEMINI_API_KEY` (y opcional `GEMINI_MODEL`) en Vercel para producción. Etapa B: WhatsApp Cloud API (producto en la app Meta "Inmopilot", número de prueba gratis, webhook en `inmopilot.vercel.app`) — recordar límites: número de prueba solo escribe a ~5 destinatarios verificados hasta verificar el negocio. Etapa C: unir entrante→IA→responder, guardar conversación, botón "tomar el control", demoras (ojo límite ~10s de Vercel Hobby → demoras largas necesitan cola/otro enfoque).
 
 ### Sprint 3 — Publicación automática en Facebook (estado)
 - **✅ FUNCIONA:** publicación automática de texto + todas las fotos en la Página de Facebook, probada en local por Omar (primera publicación real exitosa).
