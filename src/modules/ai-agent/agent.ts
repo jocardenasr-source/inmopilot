@@ -1,6 +1,7 @@
 import { generarContenido, type MensajeChat } from "@/lib/gemini";
 import type { Propiedad } from "@/modules/properties/types";
 import { promptSistema } from "./prompts";
+import { promptSistemaGeneral } from "./prompts-general";
 
 export type Intencion = "saludo" | "consulta" | "visita" | "precio" | "otro";
 
@@ -28,6 +29,32 @@ export async function responderLead(
     json: true,
   });
 
+  return interpretar(texto);
+}
+
+// Igual que responderLead, pero sobre TODAS las propiedades disponibles
+// (para WhatsApp, donde no se sabe de antemano cuál pregunta el cliente).
+export async function responderLeadGeneral(
+  propiedades: Propiedad[],
+  historial: MensajeChat[],
+  mensaje: string
+): Promise<RespuestaAgente> {
+  const mensajes: MensajeChat[] = [
+    ...historial,
+    { role: "user", text: mensaje },
+  ];
+
+  const texto = await generarContenido({
+    system: promptSistemaGeneral(propiedades),
+    mensajes,
+    json: true,
+  });
+
+  return interpretar(texto);
+}
+
+// Convierte la respuesta (idealmente JSON) de la IA en un objeto tipado.
+function interpretar(texto: string): RespuestaAgente {
   try {
     const j = JSON.parse(texto);
     const intenciones: Intencion[] = [
