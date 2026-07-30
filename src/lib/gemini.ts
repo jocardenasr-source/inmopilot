@@ -1,7 +1,7 @@
 // Cliente para la API de Google Gemini (plan gratuito de Google AI Studio).
 // Se usa SOLO en el servidor: la clave nunca llega al navegador.
 
-const MODELO = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const MODELO = process.env.GEMINI_MODEL || "gemini-flash-latest";
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 export type MensajeChat = {
