@@ -18,7 +18,49 @@ export type Variante = {
   texto: string;
 };
 
+export type OpcionesGenerador = {
+  contacto?: string;
+  destacados?: string; // puntos clave de la zona escritos por el usuario
+  seed?: number;
+};
+
 // --- Utilidades ---
+
+// Quita tildes/acentos (para armar hashtags limpios).
+function sinAcentos(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+// Convierte un texto en un hashtag: "Portal 20 de Julio" -> "#Portal20DeJulio".
+function aHashtag(texto: string): string {
+  const partes = sinAcentos(texto)
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (partes.length === 0) return "";
+  return "#" + partes.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("");
+}
+
+// Arma la línea de hashtags a partir de los datos de la propiedad + la zona.
+function construirHashtags(p: Propiedad, destacados: string): string {
+  const crudos = [
+    "FincaRaiz",
+    "Inmobiliaria",
+    p.operacion === "venta" ? "Venta" : "Arriendo",
+    ETIQUETA_TIPO[p.tipo],
+    p.ciudad ?? "",
+    p.barrio ?? "",
+    // Cada punto de la zona (separado por comas) también se vuelve hashtag.
+    ...destacados.split(",").map((s) => s.trim()),
+  ];
+  const tags: string[] = [];
+  for (const c of crudos) {
+    const tag = aHashtag(c);
+    if (tag && !tags.includes(tag)) tags.push(tag);
+  }
+  return tags.join(" ");
+}
 
 // Generador de números pseudo-aleatorios con semilla (para "regenerar").
 function crearRng(seed: number) {
@@ -77,7 +119,13 @@ function contactoLinea(contacto: string): string {
 
 // --- Plantillas por tono ---
 
-function tonoFormal(p: Propiedad, contacto: string, rng: () => number): string {
+function tonoFormal(
+  p: Propiedad,
+  contacto: string,
+  destacados: string,
+  hashtags: string,
+  rng: () => number
+): string {
   const tipo = ETIQUETA_TIPO[p.tipo];
   const op = p.operacion === "venta" ? "en venta" : "en arriendo";
   const lugar = ubicacion(p);
@@ -89,6 +137,12 @@ function tonoFormal(p: Propiedad, contacto: string, rng: () => number): string {
     `Excelente oportunidad: ${tipo.toLowerCase()} ${op}${lugar ? ` en ${lugar}` : ""}.`,
   ]);
 
+  const introZona = elegir(rng, [
+    "Ubicación privilegiada:",
+    "Sector estratégico:",
+    "Puntos destacados de la zona:",
+  ]);
+
   const cierre = elegir(rng, [
     "Interesados, comuníquese para ampliar la información y agendar una visita.",
     "Para más información o coordinar una visita, no dude en contactarnos.",
@@ -97,6 +151,7 @@ function tonoFormal(p: Propiedad, contacto: string, rng: () => number): string {
 
   const partes = [apertura];
   if (p.descripcion) partes.push(p.descripcion.trim());
+  if (destacados) partes.push(`${introZona} ${destacados}.`);
   if (carac.length)
     partes.push(
       `Características: ${carac.join(", ")}.`.replace(/, ([^,]*)\.$/, " y $1.")
@@ -104,10 +159,17 @@ function tonoFormal(p: Propiedad, contacto: string, rng: () => number): string {
   partes.push(`Precio: ${precioTexto(p)}.`);
   partes.push(cierre);
   partes.push(contactoLinea(contacto) + ".");
+  if (hashtags) partes.push(hashtags);
   return partes.join("\n\n");
 }
 
-function tonoCercano(p: Propiedad, contacto: string, rng: () => number): string {
+function tonoCercano(
+  p: Propiedad,
+  contacto: string,
+  destacados: string,
+  hashtags: string,
+  rng: () => number
+): string {
   const tipo = ETIQUETA_TIPO[p.tipo];
   const op = p.operacion === "venta" ? "en venta" : "en arriendo";
   const lugar = ubicacion(p);
@@ -134,14 +196,22 @@ function tonoCercano(p: Propiedad, contacto: string, rng: () => number): string 
 
   const partes = [apertura, gancho];
   if (p.descripcion) partes.push(p.descripcion.trim());
+  if (destacados) partes.push(`📌 ${destacados}`);
   if (carac.length) partes.push(carac.join("\n"));
   partes.push(`💰 ${precioTexto(p)}`);
   if (lugar) partes.push(`📍 ${lugar}`);
   partes.push(cta);
+  if (hashtags) partes.push(hashtags);
   return partes.join("\n\n");
 }
 
-function tonoDirecto(p: Propiedad, contacto: string, rng: () => number): string {
+function tonoDirecto(
+  p: Propiedad,
+  contacto: string,
+  destacados: string,
+  hashtags: string,
+  rng: () => number
+): string {
   const op = (p.operacion === "venta" ? "venta" : "arriendo").toUpperCase();
   const lugar = ubicacion(p);
   const carac = caracteristicasEmoji(p);
@@ -156,8 +226,13 @@ function tonoDirecto(p: Propiedad, contacto: string, rng: () => number): string 
   if (lugar) lineas.push(`📍 ${lugar}`);
   lineas.push(`💰 ${precioTexto(p)}`);
   if (carac.length) lineas.push(carac.join("  ·  "));
+  if (destacados) lineas.push(`📌 ${destacados}`);
   lineas.push("");
   lineas.push(cta);
+  if (hashtags) {
+    lineas.push("");
+    lineas.push(hashtags);
+  }
   return lineas.join("\n");
 }
 
@@ -165,25 +240,27 @@ function tonoDirecto(p: Propiedad, contacto: string, rng: () => number): string 
 // `seed` permite "regenerar" para obtener nuevas variaciones.
 export function generarVariantes(
   p: Propiedad,
-  contacto = "",
-  seed = 1
+  opciones: OpcionesGenerador = {}
 ): Variante[] {
+  const { contacto = "", destacados = "", seed = 1 } = opciones;
+  const zona = destacados.trim();
+  const hashtags = construirHashtags(p, zona);
   const rng = crearRng(seed);
   return [
     {
       tono: "formal",
       etiqueta: "Formal",
-      texto: tonoFormal(p, contacto, rng),
+      texto: tonoFormal(p, contacto, zona, hashtags, rng),
     },
     {
       tono: "cercano",
       etiqueta: "Cercano",
-      texto: tonoCercano(p, contacto, rng),
+      texto: tonoCercano(p, contacto, zona, hashtags, rng),
     },
     {
       tono: "directo",
       etiqueta: "Directo",
-      texto: tonoDirecto(p, contacto, rng),
+      texto: tonoDirecto(p, contacto, zona, hashtags, rng),
     },
   ];
 }

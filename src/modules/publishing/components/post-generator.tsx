@@ -13,12 +13,13 @@ import { generarVariantes } from "../generador";
 
 export function PostGenerator({ propiedad }: { propiedad: Propiedad }) {
   const [contacto, setContacto] = useState("");
+  const [destacados, setDestacados] = useState("");
   const [seed, setSeed] = useState(1);
   const [copiado, setCopiado] = useState<string | null>(null);
 
   const variantes = useMemo(
-    () => generarVariantes(propiedad, contacto, seed),
-    [propiedad, contacto, seed]
+    () => generarVariantes(propiedad, { contacto, destacados, seed }),
+    [propiedad, contacto, destacados, seed]
   );
 
   async function copiar(tono: string, texto: string, abrirFacebook = false) {
@@ -42,20 +43,38 @@ export function PostGenerator({ propiedad }: { propiedad: Propiedad }) {
   return (
     <div className="grid gap-6">
       {/* Configuración */}
-      <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-        <div className="grid gap-2">
-          <Label htmlFor="contacto">Tu WhatsApp o contacto (opcional)</Label>
-          <Input
-            id="contacto"
-            placeholder="Ej: 300 123 4567"
-            value={contacto}
-            onChange={(e) => setContacto(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Si lo escribes, aparecerá en el anuncio para que te contacten.
-          </p>
+      <div className="grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="contacto">Tu WhatsApp o contacto (opcional)</Label>
+            <Input
+              id="contacto"
+              placeholder="Ej: 300 123 4567"
+              value={contacto}
+              onChange={(e) => setContacto(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Si lo escribes, aparecerá en el anuncio para que te contacten.
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="destacados">Puntos destacados de la zona (opcional)</Label>
+            <Input
+              id="destacados"
+              placeholder="Ej: cerca al Portal 20 de Julio, sobre vía principal"
+              value={destacados}
+              onChange={(e) => setDestacados(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Sepáralos con comas. Se incluyen en el texto y se vuelven hashtags.
+            </p>
+          </div>
         </div>
-        <Button variant="outline" onClick={() => setSeed((s) => s + 1)}>
+        <Button
+          variant="outline"
+          className="w-fit"
+          onClick={() => setSeed((s) => s + 1)}
+        >
           <RefreshCw className="mr-2 size-4" />
           Generar otras versiones
         </Button>
